@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from contextlib import closing
 import datetime
 import sqlite3
@@ -53,19 +54,22 @@ def index():
 
 @app.route('/add', methods=['POST'])
 def add():
-    g.db.execute(
-        '''
-        INSERT INTO todos_todo (title, pub_date, closed)
-        VALUES (:title, :pub_date, :closed)
-        ''',
-        {
-            'title': request.form.get('title'),
-            'pub_date': datetime.datetime.now(),
-            'closed': False
-        }
-    )
-    g.db.commit()
-    flash('New todo was successfully posted')
+    try:
+        with g.db:
+            g.db.execute(
+                '''
+                INSERT INTO todos_todo (title, pub_date, closed)
+                VALUES (:title, :pub_date, :closed)
+                ''',
+                {
+                    'title': request.form.get('title'),
+                    'pub_date': datetime.datetime.now(),
+                    'closed': False
+                }
+            )
+            flash(u'新しいTodoが追加されました')
+    except sqlite3.IntegrityError:
+        flash(u'Titleを入力する必要があります')
     return redirect(url_for('index'))
 
 
@@ -87,19 +91,23 @@ def edit(todo_id):
 
 @app.route('/<int:todo_id>/update', methods=['POST'])
 def update(todo_id):
-    g.db.execute(
-        '''
-        UPDATE todos_todo
-        SET title=:title, closed=:closed
-        WHERE id=:todo_id
-        ''',
-        {
-            'title': request.form.get('title'),
-            'closed': True if request.form.get('closed') else False,
-            'todo_id': todo_id
-        }
-    )
-    g.db.commit()
+    try:
+        with g.db:
+            g.db.execute(
+                '''
+                UPDATE todos_todo
+                SET title=:title, closed=:closed
+                WHERE id=:todo_id
+                ''',
+                {
+                    'title': request.form.get('title'),
+                    'closed': True if request.form.get('closed') else False,
+                    'todo_id': todo_id
+                }
+            )
+            flash(u'Todoが更新されました')
+    except sqlite.IntegrityError:
+        flash(u'Titleを入力する必要があります')
     return redirect(url_for('index'))
 
 
